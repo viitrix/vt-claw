@@ -3,7 +3,7 @@
     "BigModel": {
       "baseUrl": "https://open.bigmodel.cn/api/coding/paas/v4",
       "api": "openai-completions",
-      "apiKey": "",
+      "apiKey": "GLM_API_KEY",
       "models": [
         {
           "id": "GLM-5",

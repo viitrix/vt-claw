@@ -425,12 +425,34 @@ export async function buildGroups(runtime: ChannelRuntime): Promise<void> {
     if (fs.existsSync(PI_DIR)) {
       fs.cpSync(PI_DIR, groupPiDst, { recursive: true });
     }
-    // Replace config json by real value.
-    const api_key = readEnvFile(["GLM_API_KEY"])["GLM_API_KEY"];
-    if (api_key) {
-      const modelFile = path.join(groupPiDst, "agent", "models.json");
+    // Replace apiKey fields with actual values from environment variables
+    const modelFile = path.join(groupPiDst, "agent", "models.json");
+    if (fs.existsSync(modelFile)) {
       const modelsConfig = JSON.parse(fs.readFileSync(modelFile, "utf-8"));
-      modelsConfig.providers.BigModel.apiKey = api_key;
+
+      // First pass: collect all apiKey values (env var names)
+      const envVarNames: string[] = [];
+      function collectApiKeys(obj: any): void {
+        if (!obj || typeof obj !== "object") return;
+        if (Array.isArray(obj)) {
+          for (const item of obj) collectApiKeys(item);
+          return;
+        }
+        const record = obj as Record<string, unknown>;
+        for (const key of Object.keys(record)) {
+          if (key === "apiKey" && typeof record[key] === "string") {
+            const ename = record[key];
+            const evalue =  readEnvFile([ename])[ename];
+            if (!evalue) {
+              throw new Error(`Replacing ${modelFile} : can't find ${ename} in .env`)
+            } 
+            obj[key] = evalue;
+          } else {
+            collectApiKeys(record[key]);
+          }
+        }
+      }
+      collectApiKeys(modelsConfig);
       fs.writeFileSync(modelFile, JSON.stringify(modelsConfig, null, 2));
     }
 
