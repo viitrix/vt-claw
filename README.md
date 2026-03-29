@@ -1,11 +1,36 @@
-# vt-claw
 
 <img src="assets/vt-claw.png" alt="vt-claw" width="64" height="64"/>
 
-一款面向硬件技能的 Claw 软件，主打：安全隔离、透明可控、主动智能。
+# vt-claw
 
-A hardware-focused Claw software: secure, transparent, and active.
+vt-claw 是一款以硬件技能（Skills）为核心，面向行业用户的 Claw 软件，优先集成硬件相关技能，通过灵活且安全的开源技术架构，支持各行各业的物理智能体开发与定制，提供安全隔离、透明可控、主动智能的运行底座。
 
-## 技术特色
+---
 
+## 核心特性
 
+- **安全隔离** — 多层安全架构，保障系统稳定可靠
+- **透明可控** — 操作可追溯，状态可监控
+- **主动智能** — 智能感知与自主决策能力
+
+## SaaS | Skill as a Service
+
+| 场景 | 技能示例 |
+|------|----------|
+| 安防 | 流媒体访问、录像查询分析、事件检测报警 |
+| 零售 | 多媒体生成、网页生成、动态屏幕、手机操控 |
+| 制造 | 产线质检、车间监控、智能对讲 |
+
+## 关于技术
+
+```bash
+claude "@AGENTS.md 请说明一下该软件的技术架构"
+```
+
+```bash
+claude "@AGENTS.md 请说明一下该软件如何进行安装和配置"
+```
+
+## 许可证
+
+[MIT](LICENSE) · Copyright (c) 2026 云锦微
