@@ -29,7 +29,7 @@ export const CONTAINER_MAX_OUTPUT_SIZE = parseInt(
 // Timing and container setup
 export const IPC_POLL_INTERVAL = 1000;
 export const MESSAGE_POLL_INTERVAL = 2000;
-export const SCHEDULER_POLL_INTERVAL = 60000;
+export const SCHEDULER_POLL_INTERVAL = 5000;
 export const IDLE_TIMEOUT = parseInt(process.env.IDLE_TIMEOUT || "1800000", 10); // 30min default — how long to keep container alive after last result
 
 // Timezone for scheduled tasks (cron expressions, etc.)
