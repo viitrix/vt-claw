@@ -1,21 +1,96 @@
 import fs from "node:fs";
+import crypto from "node:crypto";
 import { logger } from "../logger.js";
 import { ChannelOpts, Channel, NewMessage } from "../types.js";
-import { wechat_login, WeChatAuthInfo, WECHAT_AUTH_FILE } from "./login.js";
+import {
+  wechat_login,
+  WeChatAuthInfo,
+  WECHAT_AUTH_FILE,
+  WECHAT_BASE_URL,
+  WECHAT_CDN_URL,
+} from "./login.js";
+/*
 // https://github.com/abczsl520/weixin-bot-sdk
-import { WeixinBot, ParsedMessage } from "weixin-bot-sdk";
+import { WeixinBot } from "./sdk/index.js";
+import type { ParsedMessage } from "./sdk/types.js";
+*/
+import {
+  WeixinSDK,
+  TokenAuthProvider,
+  UploadMediaType,
+  WeixinMessage,
+  MessageItemType,
+} from "@xmccln/wechat-ilink-sdk";
+
+function extractText(message: WeixinMessage): string {
+  for (const item of message.item_list ?? []) {
+    if (item.type === MessageItemType.TEXT && item.text_item?.text) {
+      return item.text_item.text;
+    }
+    if (item.type === MessageItemType.VOICE && item.voice_item?.text) {
+      return item.voice_item.text;
+    }
+  }
+
+  return "";
+}
+
+function hasImage(message: WeixinMessage): boolean {
+  return Boolean(
+    message.item_list?.some(
+      (item) =>
+        item.type === MessageItemType.IMAGE &&
+        item.image_item?.media?.encrypt_query_param,
+    ),
+  );
+}
+
+function hasVideo(message: WeixinMessage): boolean {
+  return Boolean(
+    message.item_list?.some(
+      (item) =>
+        item.type === MessageItemType.VIDEO &&
+        item.video_item?.media?.encrypt_query_param,
+    ),
+  );
+}
+
+function hasFile(message: WeixinMessage): boolean {
+  return Boolean(
+    message.item_list?.some(
+      (item) =>
+        item.type === MessageItemType.FILE &&
+        item.file_item?.media?.encrypt_query_param,
+    ),
+  );
+}
+
+function hasVoice(message: WeixinMessage): boolean {
+  return Boolean(
+    message.item_list?.some(
+      (item) =>
+        item.type === MessageItemType.VOICE &&
+        item.voice_item?.media?.encrypt_query_param,
+    ),
+  );
+}
+
+function getFirstFileName(message: WeixinMessage): string | undefined {
+  return message.item_list?.find((item) => item.type === MessageItemType.FILE)
+    ?.file_item?.file_name;
+}
 
 export class WeChatChannel implements Channel {
   name = "";
   jid = "";
   folder = "";
   private opts: ChannelOpts;
-  private bot: WeixinBot;
+  private bot: WeixinSDK;
   private connected = false;
   private auth: WeChatAuthInfo;
   // Track current conversation context for replies
-  private currentContextToken: string | null = null;
-  private currentFromUser: string | null = null;
+  private currentContextToken: string | undefined = undefined;
+  private currentFromUser: string | undefined = undefined;
 
   private constructor(auth: WeChatAuthInfo, opts: ChannelOpts) {
     this.name = `WeChat-${auth.userId}`.slice(0, 15);
@@ -24,8 +99,13 @@ export class WeChatChannel implements Channel {
     this.opts = opts;
     this.auth = auth;
 
-    this.bot = new WeixinBot({
-      credentialsPath: WECHAT_AUTH_FILE,
+    this.bot = new WeixinSDK({
+      config: {
+        baseUrl: WECHAT_BASE_URL,
+        cdnBaseUrl: WECHAT_CDN_URL,
+        timeout: 35000,
+      },
+      auth: new TokenAuthProvider(auth.botToken, auth.userId),
     });
 
     // Set up event handlers
@@ -34,74 +114,44 @@ export class WeChatChannel implements Channel {
 
   private setupEventHandlers(): void {
     // Handle incoming messages
-    this.bot.on("message", (msg: ParsedMessage) => {
+    this.bot.onMessage((msg) => {
       this.handleIncomingMessage(msg);
     });
 
-    // Handle errors
-    this.bot.on("error", (err: Error) => {
-      logger.error(`[WeChat] Error: ${err.message}`);
-    });
-
-    // Handle session expiration
-    this.bot.on("session:expired", () => {
-      logger.warn(`[WeChat] Session expired`);
-      this.connected = false;
+    this.bot.on("error", (error) => {
+      console.error("❌ SDK error:", error);
     });
   }
 
-  private handleIncomingMessage(msg: ParsedMessage): void {
-    // console.log(JSON.stringify(msg, null, 2));
-    // Store context for replies
-    this.currentFromUser = msg.from;
-    if ((msg as any).context_token) {
-      this.currentContextToken = (msg as any).context_token;
+  private handleIncomingMessage(msg: WeixinMessage): void {
+    if (msg.from_user_id) {
+      this.currentFromUser = msg.from_user_id;
+    }
+    if (msg.context_token) {
+      this.currentContextToken = msg.context_token;
     }
 
-    // Determine message type and content
-    let type: "text" | "image" | "file" = "text";
-    let content = "";
+    const text = extractText(msg);
+    const hasInboundImage = hasImage(msg);
+    const hasInboundVideo = hasVideo(msg);
+    const hasInboundFile = hasFile(msg);
+    const hasInboundVoice = hasVoice(msg);
 
-    switch (msg.type) {
-      case "text":
-        type = "text";
-        content = msg.text || "";
-        break;
-      case "image":
-        type = "image";
-        content = msg.image?.url || "";
-        break;
-      case "file":
-        type = "file";
-        content = msg.file?.file_name || "";
-        break;
-      /*
-      case 'video':
-        type = "file";
-        content = msg.video?.url || "";
-        break;
-      */
-      case "voice":
-        type = "text";
-        content = msg.text || "[语音消息]";
-        break;
-      default:
-        type = "text";
-        content = msg.text || `[${msg.type}消息]`;
+    if (text) {
+      // Create the message object
+      const newMessage: NewMessage = {
+        id: crypto.randomUUID(),
+        jid: this.jid,
+        role: "bot",
+        type: "text",
+        content: text,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Deliver to the callback
+      this.opts.onMessage(this.jid, newMessage);
     }
 
-    // Create the message object
-    const newMessage: NewMessage = {
-      id: "" + msg.messageId,
-      jid: this.jid,
-      role: "bot",
-      type,
-      content,
-      timestamp: new Date().toISOString(),
-    };
-
-    // Deliver to the callback
-    this.opts.onMessage(this.jid, newMessage);
   }
 
   static async create(opts: ChannelOpts): Promise<WeChatChannel> {
@@ -150,22 +200,27 @@ export class WeChatChannel implements Channel {
           await this.bot.sendText(
             this.currentFromUser,
             content,
-            this.currentContextToken || undefined,
+            this.currentContextToken,
           );
           break;
         }
         case "image": {
           // content should be a file path or URL, read and send
-          const buffer = fs.readFileSync(content);
-          await this.bot.sendImage(this.currentFromUser, buffer);
-          break;
+          await this.bot.messaging.sender.sendMedia({
+            to: this.currentFromUser,
+            filePath: content,
+            mediaType: UploadMediaType.IMAGE,
+            contextToken: this.currentContextToken,
+          });
         }
         case "file": {
-          // content should be a file path
-          const buffer = fs.readFileSync(content);
-          const filename = content.split("/").pop() || "file";
-          await this.bot.sendFile(this.currentFromUser, buffer, filename);
-          break;
+          // content should be a file path or URL, read and send
+          await this.bot.messaging.sender.sendMedia({
+            to: this.currentFromUser,
+            filePath: content,
+            mediaType: UploadMediaType.FILE,
+            contextToken: this.currentContextToken,
+          });
         }
       }
     } catch (err) {
@@ -179,7 +234,7 @@ export class WeChatChannel implements Channel {
 
     if (isTyping) {
       try {
-        await this.bot.sendTyping(this.currentFromUser);
+        //TODO
       } catch (err) {
         // Typing indicator is optional, don't throw
         logger.debug(`[WeChat] sendTyping failed: ${(err as Error).message}`);

@@ -11,7 +11,56 @@ import { ChannelRuntime } from "./types.js";
 
 export interface IpcDeps {
   sendMessage: (jid: string, text: string) => Promise<void>;
+  sendImage: (jid: string, imagePath: string) => Promise<void>;
   runtime: ChannelRuntime;
+}
+
+/**
+ * Convert a container path to a host path with security validation.
+ *
+ * @param containerPath - Path inside container (e.g., "/workspace/group/subdir/file.png")
+ * @param sourceGroup - The group folder name for authorization
+ * @returns Host path if valid and exists, null otherwise
+ */
+export function containerPathToHostPath(
+  containerPath: string,
+  sourceGroup: string,
+): string | null {
+  const containerGroupPath = "/workspace/group";
+
+  // Validate container path format
+  if (!containerPath.startsWith(containerGroupPath + "/")) {
+    logger.warn(
+      { containerPath, sourceGroup },
+      "Invalid container path format, must start with /workspace/group/",
+    );
+    return null;
+  }
+
+  // Extract relative path
+  const relativePath = containerPath.slice(containerGroupPath.length + 1);
+
+  // Build host path
+  const groupDir = path.join(DATA_DIR, "groups", sourceGroup);
+  const hostPath = path.resolve(groupDir, relativePath);
+
+  // Security check: ensure the resolved path is within the group directory
+  const relative = path.relative(groupDir, hostPath);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    logger.warn(
+      { containerPath, hostPath, sourceGroup },
+      "Path escapes group directory, blocked",
+    );
+    return null;
+  }
+
+  // Check if file exists
+  if (!fs.existsSync(hostPath)) {
+    logger.warn({ hostPath, sourceGroup }, "File does not exist on host");
+    return null;
+  }
+
+  return hostPath;
 }
 
 let ipcWatcherRunning = false;
@@ -55,7 +104,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
             const filePath = path.join(messagesDir, file);
             try {
               const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-              if (data.type === "message" && data.chatJid && data.text) {
+              if (data.type === "message" && data.chatJid) {
                 const targetGroup = runtime.findChannel(data.chatJid);
                 if (targetGroup && targetGroup.folder === sourceGroup) {
                   await deps.sendMessage(data.chatJid, data.text);
@@ -67,6 +116,30 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   logger.warn(
                     { chatJid: data.chatJid, sourceGroup },
                     "Unauthorized IPC message attempt blocked",
+                  );
+                }
+              }
+              if (data.type === "image" && data.chatJid && data.image_path) {
+                const targetGroup = runtime.findChannel(data.chatJid);
+                const hostImagePath = containerPathToHostPath(
+                  data.image_path,
+                  sourceGroup,
+                );
+
+                if (
+                  targetGroup &&
+                  targetGroup.folder === sourceGroup &&
+                  hostImagePath
+                ) {
+                  await deps.sendImage(data.chatJid, hostImagePath);
+                  logger.info(
+                    { chatJid: data.chatJid, sourceGroup },
+                    "IPC image sent",
+                  );
+                } else {
+                  logger.warn(
+                    { chatJid: data.chatJid, sourceGroup },
+                    "Unauthorized IPC image attempt blocked",
                   );
                 }
               }

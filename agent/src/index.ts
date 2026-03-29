@@ -23,6 +23,7 @@ import {
 } from "@mariozechner/pi-coding-agent";
 import {
   sendMessageTool,
+  sendImageTool,
   scheduleTaskTool,
   listTasksTool,
   cancelTaskTool,
@@ -213,6 +214,7 @@ async function runQuery(
 
   const extTools = [
     sendMessageTool,
+    sendImageTool,
     scheduleTaskTool,
     listTasksTool,
     cancelTaskTool,

@@ -266,6 +266,12 @@ async function main(): Promise<void> {
       if (!channel) throw new Error(`No channel for JID: ${jid}`);
       return channel.sendMessage("text", text);
     },
+    sendImage: (jid, imagePath) => {
+      const channel = runtime.findChannel(jid);
+      if (!channel) throw new Error(`No channel for JID: ${jid}`);
+      console.log(">>>>>>>>>>>>> Send Image: " + imagePath);
+      return channel.sendMessage("image", imagePath);
+    },
     runtime: runtime,
   });
 

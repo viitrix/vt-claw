@@ -2,7 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 // 关于微信 ilink 相关配置
-const WECHAT_BASE_URL = "https://ilinkai.weixin.qq.com";
+export const WECHAT_BASE_URL = "https://ilinkai.weixin.qq.com";
+export const WECHAT_CDN_URL = "https://novac2c.cdn.weixin.qq.com/c2c";
 const PROJECT_ROOT = process.cwd();
 export const WECHAT_AUTH_FILE = path.join(
   PROJECT_ROOT,
