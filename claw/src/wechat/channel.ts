@@ -151,7 +151,6 @@ export class WeChatChannel implements Channel {
       // Deliver to the callback
       this.opts.onMessage(this.jid, newMessage);
     }
-
   }
 
   static async create(opts: ChannelOpts): Promise<WeChatChannel> {
