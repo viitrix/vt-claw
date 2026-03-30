@@ -12,6 +12,14 @@ export const GROUPS_DIR = path.resolve(
 );
 export const PI_DIR = path.resolve(PROJECT_ROOT, "..", "mount", "pi");
 
+// Env file configure
+export const ENV_FILE = path.join(PROJECT_ROOT, "..", ".env");
+export const CONTAINER_ENV_FILE = path.join(
+  PROJECT_ROOT,
+  "..",
+  ".env_container",
+);
+
 // Container configure
 export const CONTAINER_IMAGE =
   process.env.CONTAINER_IMAGE || "vt-claw-agent:latest";
