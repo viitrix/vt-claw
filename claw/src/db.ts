@@ -216,17 +216,18 @@ export function deleteTask(id: string): void {
   db.prepare("DELETE FROM scheduled_tasks WHERE id = ?").run(id);
 }
 
-export function getDueTasks(): ScheduledTask[] {
+export function getDueTasks(jids: string[]): ScheduledTask[] {
+  const placeholders = jids.map(() => "?").join(",");
   const now = new Date().toISOString();
   return db
     .prepare(
       `
     SELECT * FROM scheduled_tasks
-    WHERE status = 'active' AND next_run IS NOT NULL AND next_run <= ?
+    WHERE status = 'active' AND jid IN (${placeholders}) AND next_run IS NOT NULL AND next_run <= ?
     ORDER BY next_run
   `,
     )
-    .all(now) as ScheduledTask[];
+    .all(...jids, now) as ScheduledTask[];
 }
 
 export function updateTaskAfterRun(

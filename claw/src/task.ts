@@ -207,9 +207,14 @@ export function startSchedulerLoop(deps: SchedulerDependencies): void {
   schedulerRunning = true;
   logger.info("Scheduler loop started");
 
+  const jids: string[] = [];
+  for (const ch of deps.runtime.channels) {
+    jids.push(ch.jid);
+  }
+
   const loop = async () => {
     try {
-      const dueTasks = getDueTasks();
+      const dueTasks = getDueTasks(jids);
       if (dueTasks.length > 0) {
         logger.info({ count: dueTasks.length }, "Found due tasks");
       }
