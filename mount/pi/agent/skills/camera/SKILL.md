@@ -21,10 +21,10 @@ Fetch last image of the survillance camera, the last image is updated every minu
 
 ``` javascript
 interface CameraImageURL {
-	url: string;
+	url: string;		// 注意这个网址，不用改动，已经具备时间更新
 	timestamp: number;
 }
-
+```
 
 ## 'query' HTTP API 
 
