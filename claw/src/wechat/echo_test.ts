@@ -74,57 +74,52 @@ function getFirstFileName(message: WeixinMessage): string | undefined {
 }
 
 async function test() {
-    const auth = await wechat_login();
+  const auth = await wechat_login();
 
-    const bot = new WeixinSDK({
-      config: {
-        baseUrl: WECHAT_BASE_URL,
-        cdnBaseUrl: WECHAT_CDN_URL,
-        timeout: 35000,
-      },
-      auth: new TokenAuthProvider(auth.botToken, auth.userId),
-    });
+  const bot = new WeixinSDK({
+    config: {
+      baseUrl: WECHAT_BASE_URL,
+      cdnBaseUrl: WECHAT_CDN_URL,
+      timeout: 35000,
+    },
+    auth: new TokenAuthProvider(auth.botToken, auth.userId),
+  });
+  
+  bot.onMessage((msg: WeixinMessage) => {
+    const fromID: string = msg.from_user_id || "";
+    const token = msg.context_token;
+    if (extractText(msg)) {
+      bot.sendText(fromID, "收到！", token);
+      return;
+    }
 
-    bot.onMessage((msg: WeixinMessage) => {
-        const fromID:string = msg.from_user_id || "";
-        const token = msg.context_token;
-        if ( extractText(msg)) {
-          bot.sendText(
-            fromID,
-            "收到！",
-            token,
-          );
+    if (hasImage(msg)) {
+      void (async () => {
+        const downloaded = await bot.media.downloader.downloadFirstMedia(msg);
+        if (!downloaded || downloaded.type !== "image") {
           return;
         }
-
-        if ( hasImage(msg) ) {
-          void (async () => {
-            const downloaded = await bot.media.downloader.downloadFirstMedia(msg);
-            if (!downloaded || downloaded.type !== 'image') {
-              return;
-            }
-            try{
-              await bot.messaging.sender.sendMedia({
-                to: fromID,
-                filePath: downloaded.path,
-                mediaType: UploadMediaType.IMAGE,
-                contextToken: token,
-              });
-            } finally {
-              await downloaded.cleanup();
-            }
-          })().catch((error) => {
-            console.error('[Echo] Failed to reply image:', error);
+        try {
+          await bot.messaging.sender.sendMedia({
+            to: fromID,
+            filePath: downloaded.path,
+            mediaType: UploadMediaType.IMAGE,
+            contextToken: token,
           });
+        } finally {
+          await downloaded.cleanup();
         }
+      })().catch((error) => {
+        console.error("[Echo] Failed to reply image:", error);
+      });
+    }
+  });
 
-    });
+  bot.on("error", (error) => {
+    console.error("❌ SDK error:", error);
+  });
 
-    bot.on("error", (error) => {
-      console.error("❌ SDK error:", error);
-    });
-
-    await bot.start();
+  await bot.start();
 }
 
 test();

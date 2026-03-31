@@ -21,7 +21,7 @@ import {
   UploadMediaType,
   WeixinMessage,
   MessageItemType,
-  DownloadedMedia
+  DownloadedMedia,
 } from "@xmccln/wechat-ilink-sdk";
 
 function extractText(message: WeixinMessage): string {
@@ -93,14 +93,17 @@ export class WeChatChannel implements Channel {
   // Track current conversation context for replies
   private currentContextToken: string | undefined = undefined;
   private currentFromUser: string | undefined = undefined;
-  private download : DownloadedMedia[] = [];
+  // Track downloading resources
+  private downloadingCount = 0;
+  private downloadFiles: DownloadedMedia[] = [];
+  private penddings: NewMessage[] = [];
 
   private constructor(auth: WeChatAuthInfo, opts: ChannelOpts) {
     this.name = `WeChat-${auth.userId}`.slice(0, 15);
     this.jid = `wx-${auth.userId}`;
     this.folder = "wx-" + auth.userId.split("@")[0];
     this.opts = opts;
-    this.auth = auth;    
+    this.auth = auth;
 
     this.bot = new WeixinSDK({
       config: {
@@ -126,7 +129,7 @@ export class WeChatChannel implements Channel {
     });
   }
 
-  private async handleIncomingMessage(msg: WeixinMessage): void {
+  private handleIncomingMessage(msg: WeixinMessage): void {
     if (msg.from_user_id) {
       this.currentFromUser = msg.from_user_id;
     }
@@ -151,27 +154,58 @@ export class WeChatChannel implements Channel {
         timestamp: new Date().toISOString(),
       };
       // Deliver to the callback
-      this.opts.onMessage(this.jid, newMessage);
+      if (this.downloadingCount == 0) {
+        this.opts.onMessage(this.jid, newMessage);
+      } else {
+        this.penddings.push(newMessage);
+      }
       return;
-    } 
-
-    if ( hasInboundVoice || hasInboundVideo) {
-      await this.sendMessage("text", "我暂时无法处理这种格式！");
+    }
+    if (hasInboundVoice || hasInboundVideo) {
+      this.sendMessage("text", "我暂时无法处理这种格式！");
     }
     if (hasInboundImage) {
-      const downfile = await this.bot.media.downloader.downloadImage(msg);
-      if (downfile) {
-        this.download.push(downfile);
-        await this.sendMessage("text", "已收到您的图像文件！");
-      }
+      this.downloadingCount++;
+      this.bot.media.downloader
+        .downloadImage(msg)
+        .then((result) => this.handleDownloadedFile(result))
+        .finally(() => {
+          this.downloadingCount--;
+          this.flushPenddings();
+        });
     }
     if (hasInboundFile) {
-      const downfile = await this.bot.media.downloader.downloadFile(msg);
-      if (downfile) {
-        this.download.push(downfile);
-        await this.sendMessage("text", "已收到您发送的文件！");
-      }
+      this.downloadingCount++;
+      this.bot.media.downloader
+        .downloadFile(msg)
+        .then((result) => this.handleDownloadedFile(result))
+        .finally(() => {
+          this.downloadingCount--;
+          this.flushPenddings();
+        });
     }
+  }
+
+  private handleDownloadedFile(result: DownloadedMedia | null): void {
+    if (result) {
+      this.downloadFiles.push(result);
+    }
+  }
+
+  private flushPenddings() {
+    if (this.downloadingCount > 0) return;
+
+    for (const download of this.downloadFiles) {
+      logger.info(`>>>>> ${download.path}`);
+      download.cleanup();
+    }
+    this.downloadFiles = [];
+
+    // Deliver all pending messages
+    for (const msg of this.penddings) {
+      this.opts.onMessage(this.jid, msg);
+    }
+    this.penddings = [];
   }
 
   static async create(opts: ChannelOpts): Promise<WeChatChannel> {
@@ -232,6 +266,7 @@ export class WeChatChannel implements Channel {
             mediaType: UploadMediaType.IMAGE,
             contextToken: this.currentContextToken,
           });
+          break;
         }
         case "file": {
           // content should be a file path or URL, read and send
@@ -241,6 +276,7 @@ export class WeChatChannel implements Channel {
             mediaType: UploadMediaType.FILE,
             contextToken: this.currentContextToken,
           });
+          break;
         }
       }
     } catch (err) {

@@ -477,6 +477,16 @@ export async function buildGroups(runtime: ChannelRuntime): Promise<void> {
     );
     fs.mkdirSync(groupAgentRunnerDir, { recursive: true });
     fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, { recursive: true });
+
+    // Group(Docker + Channel) working folder
+    //  logs:     container life cycle logs
+    //  recevied: attached files/images from channel
+    const groupDir = resolveGroupFolderPath(ch.folder);
+    fs.mkdirSync(groupDir, { recursive: true });
+    const recvFileDir = path.join(groupDir, "received");
+    fs.mkdirSync(recvFileDir, { recursive: true });
+    const logsDir = path.join(groupDir, "logs");
+    fs.mkdirSync(logsDir, { recursive: true });
   }
 }
 
