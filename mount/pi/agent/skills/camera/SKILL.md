@@ -35,3 +35,19 @@ interface CameraImageURL {
 from 和 to 是时间戳，1970年1月1日以来的秒数 timestamp ，返回这个时间段内的图像记录。
 
 - RETURN: return a array of json object. `CameraImageURL[]`
+
+## 'vqa' HTTP API
+
+对安防监控画面进行视觉分析，负责分析监控画面，回答画面相关的问题， VVisual Question Answering
+
+- API URL:   `${BASE_URL}/xiaoer/api/vqa`
+- POST INPUT:  POST a json object `VQARequest`
+
+``` javascript
+interface VQARequest {
+    prompt: string;
+    image_url: string;
+}
+```
+
+
