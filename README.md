@@ -39,7 +39,7 @@ vt-claw 是一款以硬件技能（Skills）为核心，面向行业用户的 Cl
 | 制造 | 产线质检、车间监控、智能对讲 |
 
 参考项目分支：
- - [视觉技能分支](https://github.com/viitrix/vt-claw/tree/vision)
+ - [线下店铺技能分支](https://github.com/viitrix/vt-claw/tree/xiaoer)
 
 ## 关于代码
 
