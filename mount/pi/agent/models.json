@@ -6,7 +6,7 @@
       "apiKey": "GLM_API_KEY",
       "models": [
         {
-          "id": "GLM-5",
+          "id": "GLM-5.1",
           "name": "智谱编码套餐",
           "reasoning": true,
           "input": ["text"],

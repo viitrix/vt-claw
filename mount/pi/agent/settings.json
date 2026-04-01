@@ -1,4 +1,4 @@
 {
   "defaultProvider": "BigModel",
-  "defaultModel": "GLM-5"
+  "defaultModel": "GLM-5.1"
 }
