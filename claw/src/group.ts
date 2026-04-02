@@ -481,10 +481,13 @@ export async function buildGroups(runtime: ChannelRuntime): Promise<void> {
     // Group(Docker + Channel) working folder
     //  logs:     container life cycle logs
     //  recevied: attached files/images from channel
+    //  memory:   memory files
     const groupDir = resolveGroupFolderPath(ch.folder);
     fs.mkdirSync(groupDir, { recursive: true });
     const recvFileDir = path.join(groupDir, "received");
     fs.mkdirSync(recvFileDir, { recursive: true });
+    const memFileDir = path.join(groupDir, "memory");
+    fs.mkdirSync(memFileDir, { recursive: true });
     const logsDir = path.join(groupDir, "logs");
     fs.mkdirSync(logsDir, { recursive: true });
   }

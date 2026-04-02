@@ -1,4 +1,5 @@
 {
   "defaultProvider": "BigModel",
-  "defaultModel": "GLM-5.1"
+  "defaultModel": "GLM-5.1",
+  "reserveTokens": 32768
 }
