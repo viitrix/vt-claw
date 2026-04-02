@@ -23,6 +23,7 @@ case "$BUILD_TYPE" in
         BUILD_CONTEXT="."
         ;;
     agent)
+        rm -rf ../agent/node_modules
         IMAGE_NAME="vt-claw-agent"
         DOCKERFILE="Dockerfile.agent"
         BUILD_CONTEXT=".."
