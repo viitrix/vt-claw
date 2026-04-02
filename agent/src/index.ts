@@ -20,6 +20,7 @@ import {
   createAgentSession,
   SessionManager,
   DefaultResourceLoader,
+  AgentSession
 } from "@mariozechner/pi-coding-agent";
 import {
   sendMessageTool,
@@ -28,6 +29,7 @@ import {
   listTasksTool,
   cancelTaskTool,
 } from "./ipctools.js";
+import { is } from "zod/locales";
 
 interface ContainerInput {
   prompt: string;
@@ -260,37 +262,36 @@ async function createSession(
 /**
  * Run a single query on an existing session and stream results via writeOutput.
  */
-async function runQuery(
+function runQuery(
   prompt: string,
-  session: Awaited<ReturnType<typeof createAgentSession>>["session"],
-): Promise<{ newSessionId: string }> {
-  await session.prompt(prompt);
-  const newSessionId = session.sessionId;
-  const last = session.state.messages.length - 1;
-  const msg = session.state.messages[last];
-  if (msg.role === "assistant") {
-    if (msg.errorMessage) {
-      writeOutput({
-        status: "error",
-        result: msg.errorMessage,
-        newSessionId: newSessionId,
-      });
-    } else {
-      msg.content.forEach((m) => {
-        if (m.type == "text") {
-          writeOutput({
-            status: "success",
-            result: m.text,
-            newSessionId: newSessionId,
-          });
-        }
-      });
+  session: AgentSession,
+  onComplete: () => void,
+): void {
+  session.prompt(prompt).then(() => {    
+    const newSessionId = session.sessionId;
+    const last = session.state.messages.length - 1;
+    const msg = session.state.messages[last];
+    if (msg.role === "assistant") {
+      if (msg.errorMessage) {
+        writeOutput({
+          status: "error",
+          result: msg.errorMessage,
+          newSessionId: newSessionId,
+        });
+      } else {
+        msg.content.forEach((m) => {
+          if (m.type == "text") {
+            writeOutput({
+              status: "success",
+              result: m.text,
+              newSessionId: newSessionId,
+            });
+          }
+        });
+      }
     }
-  }
-
-  return {
-    newSessionId: session.sessionId,
-  };
+    onComplete();
+  });
 }
 
 async function main(): Promise<void> {
@@ -340,30 +341,33 @@ async function main(): Promise<void> {
   containerInput.sessionId = session.sessionId;
 
   // Query loop: run query → wait for IPC message → run new query → repeat
+  let isBusy = false;
   try {
     while (true) {
-      log(`Starting query (session: ${containerInput.sessionId || "new"})...`);
-
-      const queryResult = await runQuery(prompt, session);
-      containerInput.sessionId = queryResult.newSessionId;
-
-      // Emit session update so host can track it
-      writeOutput({
-        status: "success",
-        result: null,
-        newSessionId: containerInput.sessionId,
-      });
-
-      log("Query ended, waiting for next IPC message...");
-
-      // Wait for the next message or _close sentinel
+      if (isBusy == false) {
+        isBusy = true;
+        log(`Starting query (session: ${session.sessionId || "new"})...`);
+        runQuery(prompt, session, () => {
+          // Emit session update so host can track it
+          writeOutput({
+            status: "success",
+            result: null,
+            newSessionId: session.sessionId,
+          });
+          isBusy = false;
+          log("Query ended");
+        });
+      } else {
+        log("Still processing previous query, steering with new prompt");
+        await session.steer(prompt);
+      }
+    
       const nextMessage = await waitForIpcMessage();
       if (nextMessage === null) {
         log("Close sentinel received, exiting");
         break;
       }
-
-      log(`Got new message (${nextMessage.length} chars), starting new query`);
+      log(`Got new message (${nextMessage.length} chars).`);
       prompt = nextMessage;
     }
   } catch (err) {
