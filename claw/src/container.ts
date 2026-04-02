@@ -174,7 +174,7 @@ function buildContainerArgs(
   containerName: string,
   channel: Channel,
 ): string[] {
-  const args: string[] = ["run", "-i", "--rm", "--name", containerName];
+  const args: string[] = ["run", "-i", "--network", "host", "--rm", "--name", containerName];
 
   // Pass host timezone so container's local time matches the user's
   args.push("-e", `TZ=${TIMEZONE}`);
