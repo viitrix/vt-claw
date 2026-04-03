@@ -27,7 +27,7 @@ Files you create are saved in `/workspace/group/`. Use this for notes, research,
 All files are saved in `/workspace/group/`.
 
 Special folders:
-- `/workspace/group/received`: Contains files sent by the user. Only read .txt files. Do not read binary files. When a new file arrives, first ask the user: "What do you want me to do with this file?"
+- `/workspace/group/received`: Contains files sent by the user. 直接读取文本格式的文件内容，其他文件采用脚本使用编码方式读取。 
 - `/workspace/group/memory`: Store your memory and important information here.
 
 ## Memory files
