@@ -24,7 +24,7 @@ import {
 } from "@mariozechner/pi-coding-agent";
 import {
   sendMessageTool,
-  sendImageTool,
+  sendFileTool,
   scheduleTaskTool,
   listTasksTool,
   cancelTaskTool,
@@ -222,7 +222,7 @@ async function createSession(
 
   const extTools = [
     sendMessageTool,
-    sendImageTool,
+    sendFileTool,
     scheduleTaskTool,
     listTasksTool,
     cancelTaskTool,
@@ -361,7 +361,8 @@ async function main(): Promise<void> {
         log("Still processing previous query, steering with new prompt");
         await session.steer(prompt);
       }
-    
+      
+      log(`Waitting for new IPC message...`);
       const nextMessage = await waitForIpcMessage();
       if (nextMessage === null) {
         log("Close sentinel received, exiting");

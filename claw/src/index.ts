@@ -277,10 +277,14 @@ async function main(): Promise<void> {
       if (!channel) throw new Error(`No channel for JID: ${jid}`);
       return channel.sendMessage("text", text);
     },
-    sendImage: (jid, imagePath) => {
+    sendFile: (jid, filePath) => {
       const channel = runtime.findChannel(jid);
       if (!channel) throw new Error(`No channel for JID: ${jid}`);
-      return channel.sendMessage("image", imagePath);
+      // 根据文件名判断是否为图片还是普通文件
+      const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg"];
+      const ext = path.extname(filePath).toLowerCase();
+      const messageType = imageExtensions.includes(ext) ? "image" : "file";
+      return channel.sendMessage(messageType, filePath);
     },
     runtime: runtime,
   });

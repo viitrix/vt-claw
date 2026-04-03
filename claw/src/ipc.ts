@@ -11,7 +11,7 @@ import { ChannelRuntime } from "./types.js";
 
 export interface IpcDeps {
   sendMessage: (jid: string, text: string) => Promise<void>;
-  sendImage: (jid: string, imagePath: string) => Promise<void>;
+  sendFile: (jid: string, filePath: string) => Promise<void>;
   runtime: ChannelRuntime;
 }
 
@@ -119,27 +119,27 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   );
                 }
               }
-              if (data.type === "image" && data.chatJid && data.image_path) {
+              if (data.type === "file" && data.chatJid && data.file_path) {
                 const targetGroup = runtime.findChannel(data.chatJid);
-                const hostImagePath = containerPathToHostPath(
-                  data.image_path,
+                const hostFilePath = containerPathToHostPath(
+                  data.file_path,
                   sourceGroup,
                 );
 
                 if (
                   targetGroup &&
                   targetGroup.folder === sourceGroup &&
-                  hostImagePath
+                  hostFilePath
                 ) {
-                  await deps.sendImage(data.chatJid, hostImagePath);
+                  await deps.sendFile(data.chatJid, hostFilePath);
                   logger.info(
                     { chatJid: data.chatJid, sourceGroup },
-                    "IPC image sent",
+                    "IPC file sent",
                   );
                 } else {
                   logger.warn(
                     { chatJid: data.chatJid, sourceGroup },
-                    "Unauthorized IPC image attempt blocked",
+                    "Unauthorized IPC file attempt blocked",
                   );
                 }
               }

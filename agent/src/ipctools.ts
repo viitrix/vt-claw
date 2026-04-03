@@ -58,30 +58,27 @@ export const sendMessageTool: AgentTool<typeof sendMessageSchema> = {
   },
 };
 
-const sendImageSchema = Type.Object({
-  image_path: Type.String({
+const sendFileSchema = Type.Object({
+  file_path: Type.String({
     description:
-      "The path to the image file to send. Must be under `/workspace/group/` directory.",
+      "The path to the attached file to send. Must be under `/workspace/group/` directory.",
   }),
 });
 
-export const sendImageTool: AgentTool<typeof sendImageSchema> = {
-  name: "send_image",
-  label: "Send Image to Channel",
+export const sendFileTool: AgentTool<typeof sendFileSchema> = {
+  name: "send_file",
+  label: "Send file to Channel",
   description:
-    "Send an image to the user or group immediately. The image must be located in the `/workspace/group/` directory. Supports common image formats (jpg, jpeg, png, gif, webp).",
-  parameters: sendImageSchema,
+    "Send an file to the user or group immediately. The attached file must be located in the `/workspace/group/` directory. ",
+  parameters: sendFileSchema,
 
   execute: async (
     _toolCallId: string,
-    { image_path }: { image_path: string },
+    { file_path }: { file_path: string },
     _signal?: AbortSignal,
   ) => {
-    // Allowed image extensions
-    const allowedExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
-
     // Resolve the absolute path
-    const absolutePath = path.resolve(image_path);
+    const absolutePath = path.resolve(file_path);
 
     // Security check: ensure path is under /workspace/group
     const allowedDir = "/workspace/group";
@@ -90,22 +87,7 @@ export const sendImageTool: AgentTool<typeof sendImageSchema> = {
         content: [
           {
             type: "text" as const,
-            text: `Error: Image can't be found under ${allowedDir} directory. Got path: ${image_path}`,
-          },
-        ],
-        isError: true,
-        details: undefined,
-      };
-    }
-
-    // Check file extension
-    const ext = path.extname(absolutePath).toLowerCase();
-    if (!allowedExtensions.includes(ext)) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error: Invalid image format. Allowed formats: ${allowedExtensions.join(", ")}. Got: ${ext}`,
+            text: `Error: File can't be found under ${allowedDir} directory. Got path: ${file_path}`,
           },
         ],
         isError: true,
@@ -115,9 +97,9 @@ export const sendImageTool: AgentTool<typeof sendImageSchema> = {
 
     // Send IPC message with image path
     const data: Record<string, string | undefined> = {
-      type: "image",
+      type: 'file',
       chatJid,
-      image_path: absolutePath,
+      file_path: absolutePath,
       groupFolder,
       timestamp: new Date().toISOString(),
     };
@@ -125,7 +107,7 @@ export const sendImageTool: AgentTool<typeof sendImageSchema> = {
     writeIpcFile(MESSAGES_DIR, data);
 
     return {
-      content: [{ type: "text" as const, text: "Image sent." }],
+      content: [{ type: "text" as const, text: "File is sent." }],
       details: undefined,
     };
   },
