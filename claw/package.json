@@ -15,7 +15,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@xmccln/wechat-ilink-sdk": "^1.0.3",
+    "@xmccln/wechat-ilink-sdk": "^1.0.4",
     "better-sqlite3": "^11.8.1",
     "cron-parser": "^5.5.0",
     "file-type": "^22.0.0",
