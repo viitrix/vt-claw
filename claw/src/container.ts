@@ -143,7 +143,7 @@ function buildVolumeMounts(targetChannel: Channel): VolumeMount[] {
   );
   mounts.push({
     hostPath: groupPiDst,
-    containerPath: "/home/node/.pi",
+    containerPath: "/home/pn/.pi",
     readonly: false,
   });
 
@@ -196,7 +196,7 @@ function buildContainerArgs(
   const hostGid = process.getgid?.();
   if (hostUid != null && hostUid !== 0 && hostUid !== 1000) {
     args.push("--user", `${hostUid}:${hostGid}`);
-    args.push("-e", "HOME=/home/node");
+    args.push("-e", "HOME=/home/pn");
   }
 
   for (const mount of mounts) {

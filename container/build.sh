@@ -39,4 +39,4 @@ echo "Image: ${IMAGE_NAME}:${TAG}"
 echo "Dockerfile: ${DOCKERFILE}"
 echo ""
 
-${CONTAINER_RUNTIME} build -t "${IMAGE_NAME}:${TAG}" -f "${DOCKERFILE}" "${BUILD_CONTEXT}"
+${CONTAINER_RUNTIME} build --network=host -t "${IMAGE_NAME}:${TAG}" -f "${DOCKERFILE}" "${BUILD_CONTEXT}"

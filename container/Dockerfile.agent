@@ -7,40 +7,29 @@ FROM vt-claw-base:latest
 ENV AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 
+# Install agent-browser and claude-code globally
+RUN npm install -g agent-browser @mariozechner/pi-coding-agent@0.60.0
+
 # Create app directory
 WORKDIR /app
 
 # Copy package files first for better caching
 COPY agent/package*.json ./
-
-# 必要的时候可以设置代理 
-#ENV http_proxy="http://192.168.233.37:7078"
-#ENV https_proxy="http://192.168.233.37:7078"
-# Install dependencies
+COPY agent/tsconfig.json ./
 RUN npm install
-
-# Copy and build TypeScript source code
-COPY agent/ ./
-RUN npm run build
 
 # Create entrypoint script
 COPY container/entrypoint.sh ./ 
 RUN chmod +x ./entrypoint.sh
 
 # Create workspace directories
-RUN mkdir -p /workspace/group /workspace/global /workspace/extra /workspace/ipc/messages /workspace/ipc/tasks /workspace/ipc/input
+RUN mkdir -p /workspace/group /workspace/extra /workspace/ipc/messages /workspace/ipc/tasks /workspace/ipc/input
 
-# Set ownership to node user (non-root) for writable directories
-RUN chown -R node:node /workspace && chmod 777 /home/node
+# Set ownership to pn user (non-root) for writable directories
+RUN chown -R pn:pn /workspace && chmod 777 /home/pn
 
 # Switch to non-root user (required for --dangerously-skip-permissions)
-USER node
+USER pn
 
-# Set working directory to group workspace
-WORKDIR /workspace/group
-
-# 执行时关闭代理
-ENV http_proxy=""
-ENV https_proxy=""
 # Entry point reads JSON from stdin, outputs JSON to stdout
 ENTRYPOINT ["/app/entrypoint.sh"]
