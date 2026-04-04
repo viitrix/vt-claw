@@ -18,6 +18,10 @@ COPY agent/package*.json ./
 COPY agent/tsconfig.json ./
 RUN npm install
 
+# Copy python requirements, and install Python dependencies
+COPY container/requirements.txt ./
+RUN uv pip install --system -r requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+
 # Create entrypoint script
 COPY container/entrypoint.sh ./ 
 RUN chmod +x ./entrypoint.sh
