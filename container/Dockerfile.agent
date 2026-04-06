@@ -10,6 +10,11 @@ ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 # Install agent-browser and claude-code globally
 RUN npm install -g agent-browser @mariozechner/pi-coding-agent@0.60.0
 
+# Clone opencli repo from GitHub
+RUN git clone https://github.com/Teaonly/opencli-mycollege.git --depth 1 --branch v1.6.2
+COPY container/college.yaml /root/.college.yaml
+RUN cd opencli-mycollege && npm install && npm run build && npm install -g . 
+
 # Create app directory
 WORKDIR /app
 
@@ -31,6 +36,7 @@ RUN mkdir -p /workspace/group /workspace/extra /workspace/ipc/messages /workspac
 
 # Set ownership to pn user (non-root) for writable directories
 RUN chown -R pn:pn /workspace && chmod 777 /home/pn
+COPY container/college.yaml /home/pn/.college.yaml
 
 # Switch to non-root user (required for --dangerously-skip-permissions)
 USER pn

@@ -13,3 +13,6 @@
 .env
 .env_container
 .wechat_auth.json
+
+# Container
+container/college.yaml
