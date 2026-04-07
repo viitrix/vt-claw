@@ -32,6 +32,17 @@ RUN mkdir -p /workspace/group /workspace/extra /workspace/ipc/messages /workspac
 # Set ownership to pn user (non-root) for writable directories
 RUN chown -R pn:pn /workspace && chmod 777 /home/pn
 
+# 安装 polymarket 工具
+ENV https_proxy="http://127.0.0.1:7078"
+ENV http_proxy="http://127.0.0.1:7078"
+RUN curl -sSL https://raw.githubusercontent.com/Polymarket/polymarket-cli/main/install.sh | sh
+ENV https_proxy=""
+ENV http_proxy=""
+
+RUN mkdir -p /home/pn/.config/polymarket
+COPY container/config.json /home/pn/.config/polymarket/
+RUN chown -R pn:pn /home/pn/.config/polymarket/config.json
+
 # Switch to non-root user (required for --dangerously-skip-permissions)
 USER pn
 
