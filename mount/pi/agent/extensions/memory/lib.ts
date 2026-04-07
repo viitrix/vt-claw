@@ -5,15 +5,12 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { createReadStream } from "node:fs";
-import { createInterface } from "node:readline";
 
 // --- Config ---
 
 export interface MemoryConfig {
 	memoryDir: string;
 	memoryFile: string;
-	scratchpadFile: string;
 	dailyDir: string;
 	notesDir: string;
 	contextFiles: string[];
@@ -32,7 +29,6 @@ export function buildConfig(env: Record<string, string | undefined> = process.en
 	return {
 		memoryDir,
 		memoryFile: path.join(memoryDir, "MEMORY.md"),
-		scratchpadFile: path.join(memoryDir, "SCRATCHPAD.md"),
 		dailyDir,
 		notesDir: path.join(memoryDir, "notes"),
 		contextFiles,
@@ -80,47 +76,6 @@ export function ensureDirs(config: MemoryConfig): void {
 	fs.mkdirSync(config.notesDir, { recursive: true });
 }
 
-// --- Scratchpad ---
-
-export interface ScratchpadItem {
-	done: boolean;
-	text: string;
-	meta: string;
-}
-
-export function parseScratchpad(content: string): ScratchpadItem[] {
-	const items: ScratchpadItem[] = [];
-	const lines = content.split("\n");
-	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i];
-		const match = line.match(/^- \[([ xX])\] (.+)$/);
-		if (match) {
-			let meta = "";
-			if (i > 0 && lines[i - 1].match(/^<!--.*-->$/)) {
-				meta = lines[i - 1];
-			}
-			items.push({
-				done: match[1].toLowerCase() === "x",
-				text: match[2],
-				meta,
-			});
-		}
-	}
-	return items;
-}
-
-export function serializeScratchpad(items: ScratchpadItem[]): string {
-	const lines: string[] = ["# Scratchpad", ""];
-	for (const item of items) {
-		if (item.meta) {
-			lines.push(item.meta);
-		}
-		const checkbox = item.done ? "[x]" : "[ ]";
-		lines.push(`- ${checkbox} ${item.text}`);
-	}
-	return lines.join("\n") + "\n";
-}
-
 // --- Memory context builder ---
 
 export function buildMemoryContext(config: MemoryConfig): string {
@@ -158,98 +113,6 @@ export function buildMemoryContext(config: MemoryConfig): string {
 	}
 
 	return `# Memory\n\n${sections.join("\n\n---\n\n")}`;
-}
-
-// --- Session scanner ---
-
-const LOOKBACK_MS = 24 * 60 * 60 * 1000;
-
-export interface SessionInfo {
-	file: string;
-	timestamp: string;
-	title: string;
-	isChild: boolean;
-	parentSession?: string;
-	cwd: string;
-	cost: number;
-}
-
-export async function scanSession(filePath: string): Promise<SessionInfo | null> {
-	try {
-		const cutoffTime = Date.now() - LOOKBACK_MS;
-		const rl = createInterface({ input: createReadStream(filePath), crlfDelay: Infinity });
-		let lineNum = 0;
-		let header: any = null;
-		let title = "";
-		let totalCost = 0;
-
-		for await (const line of rl) {
-			lineNum++;
-			if (lineNum === 1) {
-				try {
-					header = JSON.parse(line);
-				} catch { return null; }
-				if (header.timestamp && new Date(header.timestamp).getTime() < cutoffTime) {
-					rl.close();
-					return null;
-				}
-				continue;
-			}
-			try {
-				const entry = JSON.parse(line);
-				if (entry.type === "session_info" && entry.name) {
-					title = entry.name;
-				}
-				if (entry.type === "message" && entry.message?.role === "assistant" && entry.message?.usage?.cost?.total) {
-					totalCost += entry.message.usage.cost.total;
-				}
-			} catch { continue; }
-		}
-
-		if (!header?.timestamp) return null;
-
-		if (!title) {
-			const rl2 = createInterface({ input: createReadStream(filePath), crlfDelay: Infinity });
-			for await (const line of rl2) {
-				try {
-					const entry = JSON.parse(line);
-					if (entry.type === "message" && entry.message?.role === "user") {
-						const content = entry.message.content;
-						if (typeof content === "string") {
-							title = content.slice(0, 80);
-						} else if (Array.isArray(content)) {
-							const textPart = content.find((c: any) => c.type === "text");
-							if (textPart) title = textPart.text.slice(0, 80);
-						}
-						break;
-					}
-				} catch { continue; }
-			}
-		}
-
-		return {
-			file: filePath,
-			timestamp: header.timestamp,
-			title: title || "(untitled)",
-			isChild: !!header.parentSession,
-			parentSession: header.parentSession || undefined,
-			cwd: header.cwd || "",
-			cost: totalCost,
-		};
-	} catch { return null; }
-}
-
-export function isHousekeeping(title: string): boolean {
-	const lower = title.toLowerCase();
-	const patterns = [
-		/^(clear|review|read)\s+(done|scratchpad|today|daily)/,
-		/^-\s+(no done|scratchpad|cleared|reviewed|task is)/,
-		/^scratchpad\s+(content|management|maintenance|reviewed|items)/,
-		/^\(untitled\)$/,
-		/^\/\w+$/,
-		/^write daily log/,
-	];
-	return patterns.some(p => p.test(lower));
 }
 
 // --- Search ---
