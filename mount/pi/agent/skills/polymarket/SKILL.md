@@ -1,100 +1,50 @@
 ---
 name: polymarket
-description: Research Polymarket prediction markets — look up events, markets, price history, top holders, generate charts, analyze wallets, and discover trending markets
+description: Make money on Polymarket prediction markets — look up events, markets, price history, and discover trending markets, and create order.
 ---
 
-# Polymarket Research Skill 
+你现在正在进行 Polymarket 预测市场的交易，以下是一些你可以使用的命令来查询市场信息和创建订单。
 
-### Sports Tags (for routing)
-**Live sports tags:** 
+## 列出价格在0.8-0.85之间的市场（YES/NO）
 
 ```bash
-polymarket -o json sports list 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(', '.join(x['sport'] for x in d))"
+make -f list_good_market.mk
 ```
 
-Use these tags for sports intent classification and routing to sports-markets agent.
+你需要在输出中找到你感兴趣的市场的 slug（最后一行），然后用它来创建订单，在概率大的YES/NO上创建订单。
 
-### Trending Events — Top 10 by Volume (for leaderboard/discovery queries)
+## 创建一个最小量的固定价（按最新的成交价）订单
+
 ```bash
-polymarket -o json events list --order volume --active true --limit 10 2>/dev/null | python3 -c "import sys,json; [print(f'{i+1}. {e[\"title\"]} | vol:\${float(e.get(\"volume\",0))/1e6:.1f}M | slug:{e[\"slug\"]}') for i,e in enumerate(json.load(sys.stdin))]
+make -f ./scripts/create_buy_order.mk SLUG=some-market-slug
 ```
+你需要替换 `some-market-slug` 为你在上一步中找到的市场 slug。
 
-### Trending Markets — Top 10 by Volume (individual binary markets)
+
+## 查询我的未成交订单
 ```bash
-polymarket -o json markets list --order volumeNum --active true --limit 10 2>/dev/null | python3 -c "import sys,json; [print(f'{i+1}. {m[\"question\"]} | vol:\${float(m.get(\"volumeNum\",0))/1e6:.1f}M | slug:{m[\"slug\"]}') for i,m in enumerate(json.load(sys.stdin))]
+make -f ./scripts/query_orders.mk
 ```
 
-### Top Traders Leaderboard — This Week by PnL
+根据‘price’字段 和 ‘original_size’字段，计算出订单的总价值，我的现金余额会被平台保留，直到订单成交或者取消。
+
+## 查询我的现金余额
+
 ```bash
-polymarket -o json data leaderboard --period week --order-by pnl --limit 10 2>/dev/null | python3 -c "import sys,json; [print(f'{t[\"rank\"]}. {t.get(\"user_name\") or \"anon\"} | PnL:+\${float(t[\"pnl\"]):,.0f} | vol:\${float(t[\"volume\"])/1e6:.1f}M | {t[\"proxy_wallet\"]}') for t in json.load(sys.stdin)]
+make -f ./scripts/query_cash.mk
 ```
 
-## Quick Lookup (no agent file needed)
+## 查询我的持仓以及盈亏信息
 
-For simple event/market lookups without analysis keywords:
-
-**Event URL** (`/event/` in URL):
 ```bash
-polymarket -o json events get <slug>
+make -f ./scripts/query_positions.mk
 ```
 
-**Market URL** (`/market/` in URL):
+你需要在输出中找到你感兴趣的市场的 slug（最后一行），然后用它来创建卖出订单。
+
+## 创建一个指定数量的固定价（按最新的成交价）卖出订单
+
 ```bash
-polymarket -o json markets get <slug>
+make -f ./scripts/create_sell_order.mk SLUG=some-market-slug SIZE=10
 ```
-
-**Ambiguous slug**: Try `events get` first; if 404, fall back to `markets get`.
-
-Parse `outcomePrices` with `json.loads()` — it's a JSON string, not an array.
-
-## Global CLI Reference
-
-### Key Commands
-
-| Goal | Command |
-|------|---------|
-| Get event | `polymarket -o json events get <slug>` |
-| Get market | `polymarket -o json markets get <slug>` |
-| Search markets | `polymarket markets search "<q>" --limit 20` |
-| List events by volume | `polymarket -o json events list --order volume --active true --limit 20` |
-| List markets by volume | `polymarket -o json markets list --order volumeNum --active true --limit 20` |
-| CLOB market info | `polymarket -o json clob market <CONDITION_ID>` |
-| Price spread | `polymarket -o json clob spread <TOKEN_ID>` |
-| Price midpoint | `polymarket -o json clob midpoint <TOKEN_ID>` |
-| Order book | `polymarket -o json clob book <TOKEN_ID>` |
-| Price history (recent) | `polymarket -o json clob price-history --interval max <TOKEN_ID>` |
-| Price history (full) | `polymarket -o json clob price-history --interval max --fidelity 5000 <TOKEN_ID>` |
-| Top holders | `polymarket -o json data holders <CONDITION_ID>` |
-| Open interest | `polymarket data open-interest <CONDITION_ID>` |
-| Wallet profile | `polymarket -o json profiles get <WALLET>` |
-| Portfolio value | `polymarket -o json data value <WALLET>` |
-| Volume traded | `polymarket -o json data traded <WALLET>` |
-| Positions | `polymarket -o json data positions <WALLET>` |
-| Closed positions | `polymarket -o json data closed-positions <WALLET>` |
-| Activity | `polymarket -o json data activity <WALLET> --limit 50` |
-| Trades | `polymarket -o json data trades <WALLET> --limit 500` |
-| Leaderboard | `polymarket -o json data leaderboard --period all --order-by pnl` |
-| Builder leaderboard | `polymarket -o json data builder-leaderboard` |
-| Tags | `polymarket -o json tags related-tags "<topic>"` |
-| Comments | `polymarket -o json comments list <CONDITION_ID> --limit 20` |
-| Sports list | `polymarket -o json sports list` |
-| Sports teams | `polymarket -o json sports teams --league "<LEAGUE>"` |
-| Sports market types | `polymarket -o json sports market-types` |
-| Generate chart | `python3 scripts/chart.py <TOKEN_ID> --title "..."` |
-| Chart from slug | `python3 scripts/chart.py --slug <slug> --outcome "Yes"` |
-| Chart from conditionId | `python3 scripts/chart.py --condition-id <CID>` |
-
-### Critical Gotchas
-
-| Gotcha | Detail |
-|--------|--------|
-| `outcomePrices` is a JSON string | Must `json.loads()` to parse prices from event data |
-| Hex token IDs work in v0.1.5 | No decimal conversion needed for `price`, `spread`, `book`, `price-history` |
-| `--order` is camelCase | `volumeNum` works; `volume_num` causes 422 error |
-| `markets search` has NO `--order` | Sort results manually after fetching |
-| `events list --order volume` | Works, descending by default |
-| Sum of YES prices ~ 1.01 | Normal — 1% house vig across outcomes |
-| Open Interest != face value | In neg-risk markets, OI is current-value-weighted |
-| Wrong command -> 404 | `/event/` URL = `events get`; `/market/` URL = `markets get` |
-| Holders grouped by token | `data holders` returns holders with `name`/`pseudonym` fields |
-| Infrastructure wallets | Check for empty trades, $0 avg_price, billions in value before profiling |
+你需要替换 `some-market-slug` 为你在上一步中找到的市场 slug，`SIZE=10` 表示你想卖出10个单位的持仓。
