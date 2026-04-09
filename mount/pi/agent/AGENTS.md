@@ -22,10 +22,6 @@ You also have `send_message` which sends a message immediately while you're stil
 
 Files you create are saved in `/workspace/group/`. Use this for notes, research, or anything that should persist.
 
-## Workspace
-
-All files are saved in `/workspace/group/`.
-
 Special folders:
 - `/workspace/group/received`: Contains files sent by the user. 当收到文件的时候，首先询问用户目的。文本格式的文件内容可以直接读取，其他文件采用脚本使用编码方式读取。 
 - `/workspace/group/memory`: Store your memory and important information here.
