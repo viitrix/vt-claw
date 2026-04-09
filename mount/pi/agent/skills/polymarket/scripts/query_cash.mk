@@ -4,7 +4,8 @@ import sys,json;
 
 balance = json.load(sys.stdin);
 balance = float(balance["balance"]);
-print(f"Total cash : {total}")
+
+print(f"Total cash : {balance}")
 
 endef
 export PYTHON_CODE
