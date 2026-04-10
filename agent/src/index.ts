@@ -181,6 +181,8 @@ Guidelines:
 ## Before Declaring Done
   Run the code one final time to confirm it works.
   Never declare done without a passing test.
+## Added timeout parameter for bash commands with network.
+  You can setup 5 minutes values for 'timeout' parameter.
 
 `;
 
