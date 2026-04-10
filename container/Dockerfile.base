@@ -34,6 +34,8 @@ RUN apt-get update && apt-get install -y \
     libxshmfence1 \
     curl \
     git \
+    make \
+    ffmpeg \
     fd-find \
     ripgrep \
     && rm -rf /var/lib/apt/lists/*
