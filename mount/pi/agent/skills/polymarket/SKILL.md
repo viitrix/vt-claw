@@ -40,11 +40,12 @@ make -f ./scripts/query_cash.mk
 make -f ./scripts/query_positions.mk
 ```
 
-你需要在输出中找到你感兴趣的市场的 slug（最后一行），然后用它来创建卖出订单。
+你需要在输出中找到你感兴趣的市场的 slug（最后一行），然后用它来创建卖出订单。outcome 字段表示你持仓的结果，0表示YES，1表示NO。
 
 ## 创建一个指定数量的固定价（按最新的成交价）卖出订单
 
 ```bash
-make -f ./scripts/create_sell_order.mk SLUG=some-market-slug SIZE=10
+make -f ./scripts/create_sell_order.mk SLUG=some-market-slug OUTCOME=0 SIZE=10
 ```
-你需要替换 `some-market-slug` 为你在上一步中找到的市场 slug，`SIZE=10` 表示你想卖出10个单位的持仓。
+
+你需要替换 `some-market-slug` 为你在上一步中找到的市场 slug，`OUTCOME=0` 表示你想卖出YES的持仓，`SIZE=10` 表示你想卖出10个单位的持仓。

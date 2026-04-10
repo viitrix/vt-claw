@@ -45,4 +45,4 @@ endif
 
 all:
 	@echo "I will create a buy order for $(SLUG)"
-	@polymarket markets get $(SLUG) -o json 2>/dev/null | python3 -c "$$PYTHON_CODE_QUERY" | python3 -c "$$PYTHON_CODE_ORDER" 
+	@polymarket markets get $(SLUG) -o json 2>/dev/null | python3 -c "$$PYTHON_CODE_QUERY" | python3 -c "$$PYTHON_CODE_ORDER" | sh
