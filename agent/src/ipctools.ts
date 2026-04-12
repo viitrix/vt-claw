@@ -25,6 +25,17 @@ function writeIpcFile(dir: string, data: object): string {
   return filename;
 }
 
+export function sendIpcMessage(content: string) : void {
+  const data: Record<string, string | undefined> = {
+    type: "message",
+    chatJid,
+    text: content,
+    groupFolder,
+    timestamp: new Date().toISOString(),
+  };
+  writeIpcFile(MESSAGES_DIR, data);
+}
+
 const sendMessageSchema = Type.Object({
   text: Type.String({
     description: "The message text to send, can't be empty.",
