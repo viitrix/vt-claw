@@ -1,6 +1,5 @@
 import * as fs from "node:fs";
-import { complete, type UserMessage } from "@mariozechner/pi-ai";
-import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import { ExtensionAPI, ExtensionContext,  SessionManager, createAgentSession, DefaultResourceLoader} from "@mariozechner/pi-coding-agent";
 
 const BTW_TRIGGER_FILE = "/tmp/agent-btw.txt";
 const MAX_TRANSCRIPT_CHARS = 14_000;
@@ -138,47 +137,30 @@ async function askSideQuestion(question: string, ctx: ExtensionContext): Promise
 		throw new Error("No model selected.");
 	}
 
-	const auth = await ctx.modelRegistry.getApiKeyAndHeaders(ctx.model);
-	if (!auth.ok) {
-		throw new Error(auth.error);
-	}
-	if (!auth.apiKey) {
-		throw new Error(`No API key available for ${getModelLabel(ctx)}.`);
-	}
-
 	const transcript = buildTranscriptText(ctx.sessionManager.getBranch() as SessionEntryLike[]);
-	const userMessage: UserMessage = {
-		role: "user",
-		content: [{ type: "text", text: buildSideQuestionPrompt(question, transcript) }],
-		timestamp: Date.now(),
-	};
-
-	const response = await complete(
-		ctx.model,
-		{
-			systemPrompt: SIDE_QUESTION_SYSTEM_PROMPT,
-			messages: [userMessage],
-		},
-		{
-			apiKey: auth.apiKey,
-			headers: auth.headers,
-		},
-	);
-
-	if (response.stopReason === "aborted") {
-		throw new Error("Cancelled.");
-	}
-
-	const answer = response.content
-		.filter((item:any): item is { type: "text"; text: string } => item.type === "text")
-		.map((item:any) => item.text)
-		.join("\n")
-		.trim();
-
-	return answer || "No response received.";
+	const userMessage = buildSideQuestionPrompt(question, transcript)
+	
+	const loader = new DefaultResourceLoader({
+		systemPromptOverride: () => SIDE_QUESTION_SYSTEM_PROMPT,
+	});
+	await loader.reload();
+	const { session: session } = await createAgentSession({
+		resourceLoader: loader,
+		sessionManager: SessionManager.inMemory(),
+	});
+	await session.prompt(userMessage);
+	const last = session.state.messages.length - 1;
+    const msg = session.state.messages[last];
+    if (msg.role === "assistant") {
+      if (msg.errorMessage) {
+		return `Error: ${msg.errorMessage}`;
+      } else {
+		return msg.content.map((m) => m.type === "text" ? m.text : "").join("\n");
+      }
+    }
 }
 
-async function startBtw(question: string, pi: ExtensionAPI, ctx: ExtensionContext) {
+async function startBtw(question: string, pi: ExtensionAPI, ctx: ExtensionContext) : Promise<void>  {
 	if (!ctx.model) {
 		return;
 	}
@@ -195,6 +177,7 @@ export default function (pi: ExtensionAPI) {
 		description: "Answer a side question",
 		handler: async (args:any, ctx:ExtensionContext) => {
 			const question:string  = args.trim() || "";
+			console.error("*********** BTW command received with args: ***********", question);
 			if (question.length > 0) {
 				void startBtw(question, pi, ctx);
 			}
