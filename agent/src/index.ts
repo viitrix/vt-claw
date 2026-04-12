@@ -20,7 +20,8 @@ import {
   createAgentSession,
   SessionManager,
   DefaultResourceLoader,
-  AgentSession
+  AgentSession,
+  ExtensionAPI,
 } from "@mariozechner/pi-coding-agent";
 import {
   sendMessageTool,
@@ -28,6 +29,7 @@ import {
   scheduleTaskTool,
   listTasksTool,
   cancelTaskTool,
+  sendIpcMessage,
 } from "./ipctools.js";
 import { is } from "zod/locales";
 
@@ -186,6 +188,14 @@ Guidelines:
 
 `;
 
+const btwExtention = function (pi: ExtensionAPI) {
+  // Listen for events from other extensions
+	pi.events.on("btw:result", (data:any) => {
+    const content = data.toString();
+    sendIpcMessage(content);
+	});
+};
+
 /**
  * Create a session that can be reused across multiple queries.
  */
@@ -231,6 +241,9 @@ async function createSession(
   ];
   const resLoader = new DefaultResourceLoader({
     systemPromptOverride: () => SYSTEM_PROMPT,
+    extensionFactories: [
+      btwExtention,
+	  ],
   });
   await resLoader.reload();
 
