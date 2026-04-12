@@ -21,9 +21,12 @@ interface QueuedTask {
   fn: () => Promise<void>;
 }
 interface GroupState {
+  // Group's state
   active: boolean;
   idleWaiting: boolean;
   isTaskContainer: boolean;
+
+  // Group's data
   runningTaskId: string | null;
   pendingMessages: boolean;
   pendingTasks: QueuedTask[];
@@ -42,12 +45,14 @@ export class GroupQueue {
   private waitingGroups: string[] = [];
   private shuttingDown = false;
 
+  // Actual function for processing all pending messages.
   private processMessagesFn: ((groupJid: string) => Promise<boolean>) | null =
     null;
 
   private getGroup(groupJid: string): GroupState {
     let state = this.groups.get(groupJid);
     if (!state) {
+      // Init Groups's state and data
       state = {
         active: false,
         idleWaiting: false,
@@ -91,7 +96,7 @@ export class GroupQueue {
       );
       return;
     }
-
+    // Try to run processMessageFn
     this.runForGroup(groupJid, "messages").catch((err) =>
       logger.error({ groupJid, err }, "Unhandled error in runForGroup"),
     );
@@ -143,12 +148,12 @@ export class GroupQueue {
     groupJid: string,
     proc: ChildProcess,
     containerName: string,
-    groupFolder?: string,
+    groupFolder: string,
   ): void {
     const state = this.getGroup(groupJid);
     state.process = proc;
     state.containerName = containerName;
-    if (groupFolder) state.groupFolder = groupFolder;
+    state.groupFolder = groupFolder;
   }
 
   /**
