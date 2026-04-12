@@ -190,7 +190,7 @@ Guidelines:
 
 const btwExtention = function (pi: ExtensionAPI) {
   // Listen for events from other extensions
-	pi.events.on("btw:result", (data:any) => {
+	pi.events.on("btw:answer", (data:any) => {
     const content = data.toString();
     sendIpcMessage(content);
 	});
@@ -260,10 +260,17 @@ async function createSession(
       case "message_update":
         break;
       case "tool_execution_start":
-        log(`Tool: ${event.toolName}`);
+        log(`toolStarted: ${event.toolName}`);
+        break;
+      case "tool_execution_update":
+        log(`toolUpdate: ${event.toolName} : ${JSON.stringify(event.partialResult, null, 2)}`);
         break;
       case "tool_execution_end":
-        log(`Result: ${event.result}`);
+        if (event.isError) {
+          log(`toolEnded: ${event.toolName}\x1b[0m`);
+        } else {
+          log(`toolEnded: ${event.toolName}\x1b[0m`);
+        }
         break;
       case "agent_end":
         log("Done");
@@ -374,7 +381,9 @@ async function main(): Promise<void> {
         });
       } else {
         log("Still processing previous query, steering with new prompt");
-        await session.steer(prompt);
+        // await session.steer(prompt);
+        prompt = "/btw " + prompt; // Prepend special marker to indicate this is a steer, not a new query
+        session.prompt(prompt);
       }
       
       log(`Waitting for new IPC message...`);
