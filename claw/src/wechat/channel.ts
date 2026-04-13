@@ -24,6 +24,7 @@ import {
   WeixinMessage,
   MessageItemType,
   DownloadedMedia,
+  TypingStatus,
 } from "@xmccln/wechat-ilink-sdk";
 import { ref } from "node:process";
 
@@ -96,6 +97,7 @@ export class WeChatChannel implements Channel {
   // Track current conversation context for replies
   private currentContextToken: string | undefined = undefined;
   private currentFromUser: string | undefined = undefined;
+  private currentTypingTicket: string | undefined = undefined;
   // Track downloading resources
   private downloadingCount = 0;
   private downloadFiles: DownloadedMedia[] = [];
@@ -134,9 +136,15 @@ export class WeChatChannel implements Channel {
 
   private handleIncomingMessage(msg: WeixinMessage): void {
     if (msg.from_user_id) {
+      if (this.currentFromUser !== msg.from_user_id) {
+        this.currentTypingTicket = undefined;
+      }
       this.currentFromUser = msg.from_user_id;
     }
     if (msg.context_token) {
+      if (this.currentContextToken !== msg.context_token) {
+        this.currentTypingTicket = undefined;
+      }
       this.currentContextToken = msg.context_token;
     }
 
@@ -325,13 +333,46 @@ export class WeChatChannel implements Channel {
   async setTyping(isTyping: boolean): Promise<void> {
     if (!this.connected || !this.currentFromUser) return;
 
-    if (isTyping) {
-      try {
-        //TODO
-      } catch (err) {
-        // Typing indicator is optional, don't throw
-        logger.debug(`[WeChat] sendTyping failed: ${(err as Error).message}`);
+    try {
+      const apiEndpoints = (
+        this.bot as unknown as {
+          apiEndpoints?: {
+            getConfig(params: {
+              ilink_user_id?: string;
+              context_token?: string;
+            }): Promise<{ typing_ticket?: string }>;
+            sendTyping(params: {
+              ilink_user_id?: string;
+              typing_ticket?: string;
+              status?: number;
+            }): Promise<unknown>;
+          };
+        }
+      ).apiEndpoints;
+
+      if (!apiEndpoints) return;
+
+      if (!this.currentTypingTicket) {
+        const config = await apiEndpoints.getConfig({
+          ilink_user_id: this.currentFromUser,
+          context_token: this.currentContextToken,
+        });
+        this.currentTypingTicket = config.typing_ticket;
       }
+
+      if (!this.currentTypingTicket) {
+        logger.debug("[WeChat] No typing_ticket returned, skipping typing");
+        return;
+      }
+
+      await apiEndpoints.sendTyping({
+        ilink_user_id: this.currentFromUser,
+        typing_ticket: this.currentTypingTicket,
+        status: isTyping ? TypingStatus.TYPING : TypingStatus.CANCEL,
+      });
+    } catch (err) {
+      // Typing indicator is optional, don't throw
+      logger.debug(`[WeChat] sendTyping failed: ${(err as Error).message}`);
     }
   }
 }
