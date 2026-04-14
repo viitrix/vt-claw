@@ -302,7 +302,12 @@ async function main(): Promise<void> {
         return;
       }
       const text = formatOutbound(rawText);
-      if (text) await channel.sendMessage("text", text);
+      
+      try {
+        if (text) await channel.sendMessage("text", text);
+      } catch (err) {
+        logger.error({ jid, err }, "Failed to send scheduled message");
+      }
     },
   });
 
