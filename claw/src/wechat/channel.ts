@@ -264,7 +264,7 @@ export class WeChatChannel implements Channel {
 
     try {
       // Start polling for messages
-      this.bot.start();
+      await this.bot.start();
       this.connected = true;
       logger.info(`[WeChat] Channel connected: ${this.name}`);
     } catch (err) {
