@@ -1,14 +1,14 @@
 {
   "providers": {
-    "BigModel": {
-      "baseUrl": "https://open.bigmodel.cn/api/coding/paas/v4",
+    "Volcengine": {
+      "baseUrl": "https://ark.cn-beijing.volces.com/api/coding/v3",
       "api": "openai-completions",
-      "apiKey": "GLM_API_KEY",
+      "apiKey": "ARK_API_KEY",
       "models": [
         {
-          "id": "GLM-5.1",
-          "name": "智谱编码套餐",
-          "reasoning": true,
+          "id": "ark-code-latest",
+          "name": "Volcengine Coding",
+          "reasoning": false,
           "input": ["text"],
           "contextWindow": 128000,
           "maxTokens": 32000,
