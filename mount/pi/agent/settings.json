@@ -1,5 +1,5 @@
 {
-  "defaultProvider": "BigModel",
-  "defaultModel": "GLM-5.1",
+  "defaultProvider": "Volcengine",
+  "defaultModel": "ark-code-latest",
   "reserveTokens": 32768
 }

@@ -51,6 +51,44 @@ interface ContainerOutput {
 const IPC_INPUT_DIR = "/workspace/ipc/input";
 const IPC_INPUT_CLOSE_SENTINEL = path.join(IPC_INPUT_DIR, "_close");
 const IPC_POLL_MS = 500;
+const QUERY_TIMEOUT_MS = parseInt(
+  process.env.AGENT_QUERY_TIMEOUT_MS || "120000",
+  10,
+);
+
+function findSessionFileById(
+  searchRoot: string,
+  sessionId: string,
+): string | null {
+  if (!searchRoot || !fs.existsSync(searchRoot)) return null;
+
+  const stack = [searchRoot];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) continue;
+
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
+
+      if (entry.isFile() && entry.name.includes(sessionId)) {
+        return fullPath;
+      }
+    }
+  }
+
+  return null;
+}
 
 async function readStdin(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -212,9 +250,16 @@ async function createSession(
         (s) => s.id === sessionId || s.path.includes(sessionId),
       );
 
-      if (existingSession) {
-        log(`Resuming existing session: ${existingSession.id.slice(0, 8)}...`);
-        sessionManager = SessionManager.open(existingSession.path);
+      const persistedSessionPath =
+        existingSession?.path ||
+        findSessionFileById(
+          path.join(process.env.HOME || "", ".pi", "agent", "sessions"),
+          sessionId,
+        );
+
+      if (persistedSessionPath) {
+        log(`Resuming existing session: ${sessionId.slice(0, 8)}...`);
+        sessionManager = SessionManager.open(persistedSessionPath);
       } else {
         log(
           `Session ${sessionId.slice(0, 8)}... not found, creating new session`,
@@ -289,31 +334,69 @@ function runQuery(
   session: AgentSession,
   onComplete: () => void,
 ): void {
-  session.prompt(prompt).then(() => {    
-    const newSessionId = session.sessionId;
-    const last = session.state.messages.length - 1;
-    const msg = session.state.messages[last];
-    if (msg.role === "assistant") {
-      if (msg.errorMessage) {
-        writeOutput({
-          status: "error",
-          result: msg.errorMessage,
-          newSessionId: newSessionId,
-        });
-      } else {
-        msg.content.forEach((m) => {
-          if (m.type == "text") {
-            writeOutput({
-              status: "success",
-              result: m.text,
-              newSessionId: newSessionId,
-            });
-          }
-        });
+  let settled = false;
+  const finish = () => {
+    if (settled) return false;
+    settled = true;
+    return true;
+  };
+
+  const timeout = setTimeout(() => {
+    if (!finish()) return;
+    const errorMessage = `Agent query timed out after ${QUERY_TIMEOUT_MS}ms`;
+    log(errorMessage);
+    writeOutput({
+      status: "error",
+      result: null,
+      newSessionId: session.sessionId,
+      error: errorMessage,
+    });
+    process.exit(1);
+  }, QUERY_TIMEOUT_MS);
+
+  session
+    .prompt(prompt)
+    .then(() => {
+      if (!finish()) return;
+      clearTimeout(timeout);
+
+      const newSessionId = session.sessionId;
+      const last = session.state.messages.length - 1;
+      const msg = session.state.messages[last];
+      if (msg.role === "assistant") {
+        if (msg.errorMessage) {
+          writeOutput({
+            status: "error",
+            result: msg.errorMessage,
+            newSessionId: newSessionId,
+          });
+        } else {
+          msg.content.forEach((m) => {
+            if (m.type == "text") {
+              writeOutput({
+                status: "success",
+                result: m.text,
+                newSessionId: newSessionId,
+              });
+            }
+          });
+        }
       }
-    }
-    onComplete();
-  });
+      onComplete();
+    })
+    .catch((err) => {
+      if (!finish()) return;
+      clearTimeout(timeout);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      log(`Query failed: ${errorMessage}`);
+      writeOutput({
+        status: "error",
+        result: null,
+        newSessionId: session.sessionId,
+        error: errorMessage,
+      });
+      onComplete();
+    });
 }
 
 async function main(): Promise<void> {

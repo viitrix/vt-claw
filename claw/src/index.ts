@@ -166,17 +166,17 @@ async function runAgentInContainer(
       },
     );
 
-    if (output.newSessionId) {
-      runtime.sessionIDs[targetChannel.jid] = output.newSessionId;
-      runtime.saveState();
-    }
-
     if (output.status === "error" || hadError) {
       logger.error(
         { group: targetChannel.name, error: output.error },
         "Container agent error",
       );
       return [false, outputSentToUser];
+    }
+
+    if (output.newSessionId) {
+      runtime.sessionIDs[targetChannel.jid] = output.newSessionId;
+      runtime.saveState();
     }
     return [true, outputSentToUser];
   } catch (err) {
