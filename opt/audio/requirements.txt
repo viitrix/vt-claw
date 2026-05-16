@@ -1,0 +1,4 @@
+numpy
+sounddevice
+loguru
+websockets

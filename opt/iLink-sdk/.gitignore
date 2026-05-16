@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.claude/
+*.log
+.DS_Store
+coverage/
+.idea/
+*.tgz
+.weixin-auth.json

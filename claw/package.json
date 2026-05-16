@@ -1,0 +1,43 @@
+{
+  "name": "vt-claw agent",
+  "version": "0.0.1",
+  "description": "Agent runner for vt-claw",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "check": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "dependencies": {
+    "@mariozechner/pi-agent-core": "^0.72.1",
+    "@mariozechner/pi-coding-agent": "file:../opt/coding-agent",
+    "better-sqlite3": "^11.8.1",
+    "cors": "^2.8.6",
+    "cron-parser": "^5.5.0",
+    "express": "^5.2.1",
+    "file-type": "^22.0.0",
+    "iLink-sdk": "file:../opt/iLink-sdk",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
+    "qrcode": "^1.5.4",
+    "typebox": "^1.1.24",
+    "yaml": "^2.8.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.10.0",
+    "@types/qrcode": "^1.5.6",
+    "prettier": "^3.8.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

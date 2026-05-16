@@ -1,0 +1,14 @@
+
+# Temp files
+.tmp-*
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Local data
+container/workspace
+pi/models.json

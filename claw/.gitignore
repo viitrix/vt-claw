@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+.npm-cache/
+# Build output
+dist/
+
+# Temp files
+.tmp-*
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+

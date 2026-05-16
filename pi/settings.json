@@ -1,0 +1,6 @@
+{
+  "defaultProvider": "MyProvider",
+  "defaultModel": "qwen3.6-plus",
+  "reserveTokens": 32768,
+  "lastChangelogVersion": "0.60.0"
+}
