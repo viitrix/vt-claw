@@ -5,7 +5,7 @@
   import { replaceState } from '$app/navigation';
   import type { User } from '$lib/server/db/schema';
 
-  let { user, chatClient }: { user: User | undefined; chatClient: Chat } = $props();
+  let { user, chatClient, selectedRole }: { user: User | undefined; chatClient: Chat; selectedRole: string } = $props();
 
   const suggestedActions = [
     {
@@ -46,6 +46,8 @@
           await chatClient.append({
             role: 'user',
             content: suggestedAction.action
+          }, {
+            body: { role: selectedRole }
           });
         }}
         class="h-auto w-full flex-1 items-start justify-start gap-1 rounded-xl border px-4 py-3.5 text-left text-sm sm:flex-col"
