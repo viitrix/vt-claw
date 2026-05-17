@@ -16,6 +16,7 @@ exec ${CONTAINER_RUNTIME} run --rm -it\
     --user $(id -u):$(id -g) \
     --workdir /home/pn \
     --group-add video \
+    --device /dev/video0:/dev/video79 \
     -e TZ="$(cat /etc/timezone 2>/dev/null || echo 'Asia/Shanghai')" \
     -e HOME=/home/pn \
     -e PI_DIR=/home/pn/.pi/agent \

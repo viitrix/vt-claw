@@ -10,6 +10,7 @@ import urllib.request
 import urllib.error
 import numpy as np
 import sounddevice as sd
+from dotenv import load_dotenv
 from loguru import logger
 
 from vad.tenvad.provider import VADProvider
@@ -67,9 +68,6 @@ def main():
     parser.add_argument("--list-devices", action="store_true", help="List audio devices and exit")
     parser.add_argument("--output", type=str, default=OUTPUT_DIR, help="Output directory for WAV files")
     parser.add_argument("--save-wav", action="store_true", default=False, help="Save WAV files to output directory")
-    parser.add_argument("--app-id", type=str, default=os.getenv("XF_APP_ID"), help="XunFei APP ID")
-    parser.add_argument("--api-key", type=str, default=os.getenv("XF_API_KEY"), help="XunFei API Key")
-    parser.add_argument("--api-secret", type=str, default=os.getenv("XF_API_SECRET"), help="XunFei API Secret")
     parser.add_argument("--callback-url", type=str, default=os.getenv("CALLBACK_URL", "http://localhost:5173/walkie/api/asr"), help="HTTP callback URL after ASR")
     args = parser.parse_args()
 
@@ -77,8 +75,12 @@ def main():
         print(sd.query_devices())
         return
 
-    if not all([args.app_id, args.api_key, args.api_secret]):
-        logger.error("XunFei credentials required: --app-id, --api-key, --api-secret (or env XF_APP_ID, XF_API_KEY, XF_API_SECRET)")
+    load_dotenv()
+    app_id = os.getenv("XF_APP_ID")
+    api_key = os.getenv("XF_API_KEY")
+    api_secret = os.getenv("XF_API_SECRET")
+    if not all([app_id, api_key, api_secret]):
+        logger.error("XunFei credentials required: set XF_APP_ID, XF_API_KEY, XF_API_SECRET in .env file")
         sys.exit(1)
 
     os.makedirs(args.output, exist_ok=True)
@@ -93,9 +95,9 @@ def main():
     vad_provider = VADProvider(vad_config, SAMPLE_RATE, BLOCK_SIZE)
 
     asr_config = {
-        "app_id": args.app_id,
-        "api_key": args.api_key,
-        "api_secret": args.api_secret,
+        "app_id": app_id,
+        "api_key": api_key,
+        "api_secret": api_secret,
         "language": "zh_cn",
         "domain": "iat",
         "accent": "mandarin",

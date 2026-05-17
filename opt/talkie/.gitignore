@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 .venv/
 output/
+.env
 *.so
 *.wav
 *.bin

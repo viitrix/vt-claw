@@ -2,3 +2,4 @@ numpy
 sounddevice
 loguru
 websockets
+python-dotenv
