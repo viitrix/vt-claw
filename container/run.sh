@@ -6,6 +6,7 @@ CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-docker}"
 TAG="${1:-latest}"
 CONTAINER_IMAGE="vt-claw-xiaoer"
 SERVER_PORT="${SERVER_PORT:-3000}"
+HOST_EXT_PORT="${HOST_EXT_PORT:-4000}"
 
 if ${CONTAINER_RUNTIME} ps -q --filter "name=${CONTAINER_IMAGE}" | grep -q .; then
     ${CONTAINER_RUNTIME} stop ${CONTAINER_IMAGE}
@@ -21,6 +22,8 @@ exec ${CONTAINER_RUNTIME} run --rm -it\
     -e STORE_DIR=/workspace \
     -e HOST_STORE_DIR="$(pwd)/workspace" \
     -e SERVER_PORT="${SERVER_PORT}" \
+    -e HOST_EXT_PORT="${HOST_EXT_PORT}" \
+    --add-host host.docker.internal:host-gateway \
     -e ENABLE_AUDIO="${ENABLE_AUDIO:-false}" \
     -e AUDIO_DEVICE="${AUDIO_DEVICE:-default}" \
     -p "127.0.0.1:${SERVER_PORT}:${SERVER_PORT}" \
