@@ -27,7 +27,6 @@ export class WebBot implements BotDeps {
   session!: AgentSession;
   private unsubscribe: (() => void) | null = null;
   private currentRes: express.Response | null = null;
-  private fileQueue: string[] = [];
 
   private constructor(userId: string, role: BotRole, sessionId?: string) {
     this.userId = userId;
@@ -140,7 +139,6 @@ export class WebBot implements BotDeps {
   async sendMessage(_text: string): Promise<void> {}
 
   async sendFile(filePath: string): Promise<void> {
-    this.fileQueue.push(filePath);
     const relativePath = path.relative(this.folder, filePath);
     if (this.currentRes && !this.currentRes.writableEnded) {
       this.currentRes.write(

@@ -2,7 +2,6 @@
   import AuthForm from '$lib/components/auth-form.svelte';
   import SubmitButton from '$lib/components/submit-button.svelte';
   import { page } from '$app/state';
-  import { onMount } from 'svelte';
 
   let { form } = $props();
 
@@ -10,17 +9,19 @@
 
   let roles = $state<{ name: string; displayName: string; description: string }[]>([]);
 
-  onMount(async () => {
-    if (page.params.authType !== 'signup') return;
-    try {
-      const resp = await fetch('/api/roles?channel=web');
-      if (resp.ok) {
-        const data = await resp.json();
-        roles = data.roles ?? [];
-      }
-    } catch {
-      // roles will remain empty
+  $effect(() => {
+    if (page.params.authType !== 'signup') {
+      roles = [];
+      return;
     }
+    const controller = new AbortController();
+    fetch('/api/roles?channel=web', { signal: controller.signal })
+      .then((resp) => resp.ok ? resp.json() : null)
+      .then((data) => {
+        if (data) roles = data.roles ?? [];
+      })
+      .catch(() => {});
+    return () => controller.abort();
   });
 </script>
 
