@@ -10,7 +10,7 @@
   import { untrack, onMount } from 'svelte';
   import type { UIMessage } from '@ai-sdk/svelte';
 
-  type RoleInfo = { name: string; displayName: string; description: string };
+  import type { RoleInfo } from '$lib/server/claw-client';
 
   let {
     user,

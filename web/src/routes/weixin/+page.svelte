@@ -1,10 +1,7 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
   import { goto } from '$app/navigation';
-
-  type RoleInfo = { name: string; displayName: string; description: string };
-  type WxLoginResp = { status: string; qrcode?: string; rid?: string; error?: string };
-  type QrStatusResp = { status: string };
+  import type { RoleInfo, WxLoginResp, QrStatusResp } from '$lib/server/claw-client';
 
   let roles = $state<RoleInfo[]>([]);
   let selectedRole = $state<string>('');
