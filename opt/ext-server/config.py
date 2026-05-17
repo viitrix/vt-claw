@@ -14,5 +14,10 @@ tts_config = {
     "volume": int(os.getenv("TTS_VOLUME", "50")),
     "speech_rate": int(os.getenv("TTS_SPEECH_RATE", "0")),
     "pitch_rate": int(os.getenv("TTS_PITCH_RATE", "0")),
-    "output_dir": os.getenv("TTS_OUTPUT_DIR", tempfile.gettempdir()),
+    "output_dir": "./tts_output",
 }
+
+server_port = int(os.getenv("SERVER_PORT", "4000"))
+
+## create output dir if not exists
+os.makedirs(tts_config["output_dir"], exist_ok=True)
