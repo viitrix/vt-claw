@@ -91,52 +91,13 @@
               <!-- <MessageEditor key={message.id} {message} {setMode} {setMessages} {reload} /> -->
             </div>
           {/if}
-
-          <!-- TODO -->
-          <!-- {:else if type === 'tool-invocation'}
-					{@const { toolInvocation } = part}
-					{@const { toolName, state } = toolInvocation}
-
-					{#if state === 'call'}
-						{@const { args } = toolInvocation}
-						<div
-							class={cn({
-								skeleton: ['getWeather'].includes(toolName)
-							})}
-						>
-							{#if toolName === 'getWeather'}
-								<Weather />
-							{:else if toolName === 'createDocument'}
-								<DocumentPreview {readonly} {args} />
-							{:else if toolName === 'updateDocument'}
-								<DocumentToolCall type="update" {args} {readonly} />
-							{:else if toolName === 'requestSuggestions'}
-								<DocumentToolCall type="request-suggestions" {args} {readonly} />
-							{/if}
-						</div>
-					{:else if state === 'result'}
-					{@const { result } = toolInvocation}
-						<div>
-							{#if toolName === 'getWeather'}
-								<Weather weatherAtLocation={result} />
-							{:else if toolName === 'createDocument'}
-								<DocumentPreview {readonly} {result} />
-							{:else if toolName === 'updateDocument'}
-								<DocumentToolResult type="update" {result} {readonly} />
-							{:else if toolName === 'requestSuggestions'}
-								<DocumentToolResult type="request-suggestions" {result} {readonly} />
-							{:else}
-								<pre>{JSON.stringify(result, null, 2)}</pre>
-							{/if}
-						</div>
-					{/if} -->
         {/if}
       {/each}
 
       <!-- TODO -->
       <!-- {#if !readonly}
-				<MessageActions key={`action-${message.id}`} {chatId} {message} {vote} {isLoading} />
-			{/if} -->
+					<MessageActions key={`action-${message.id}`} {chatId} {message} {vote} {isLoading} />
+				{/if} -->
     </div>
   </div>
 </div>

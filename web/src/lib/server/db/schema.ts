@@ -61,24 +61,3 @@ export const message = sqliteTable("Message", {
 });
 
 export type Message = InferSelectModel<typeof message>;
-
-export const document = sqliteTable(
-  "Document",
-  (t) => ({
-    id: text("id")
-      .notNull()
-      .$defaultFn(() => crypto.randomUUID()),
-    createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
-    title: text("title").notNull(),
-    content: text("content"),
-    kind: text("text", { enum: ["text", "code", "image", "sheet"] })
-      .notNull()
-      .default("text"),
-    userId: text("userId")
-      .notNull()
-      .references(() => user.id),
-  }),
-  (table) => [primaryKey({ columns: [table.id, table.createdAt] })],
-);
-
-export type Document = InferSelectModel<typeof document>;

@@ -4,7 +4,7 @@ import type {
   CoreToolMessage,
   Message,
 } from "ai";
-import type { Message as DBMessage, Document } from "$lib/server/db/schema";
+import type { Message as DBMessage } from "$lib/server/db/schema";
 import type { UIMessage } from "@ai-sdk/svelte";
 
 export function convertToUIMessages(
@@ -24,16 +24,6 @@ export function convertToUIMessages(
 export function getMostRecentUserMessage(messages: Array<Message>) {
   const userMessages = messages.filter((message) => message.role === "user");
   return userMessages.at(-1);
-}
-
-export function getDocumentTimestampByIndex(
-  documents: Array<Document>,
-  index: number,
-) {
-  if (!documents) return new Date();
-  if (index > documents.length) return new Date();
-
-  return documents[index].createdAt;
 }
 
 type ResponseMessageWithoutId = CoreToolMessage | CoreAssistantMessage;
